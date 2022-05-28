@@ -1,0 +1,15 @@
+# Cylindrical Volume source:
+#
+#
+/gps/pos/type Volume
+/gps/pos/shape Cylinder
+
+# Storage Location in World Coords:
+/gps/pos/centre -48.26 -22.86 -155.2575 cm
+
+#/gps/pos/centre 0 0 0 cm
+
+# PuBe Volume
+/gps/pos/halfz 1.905 cm
+/gps/pos/radius 1.03378 cm
+/gps/ang/type iso

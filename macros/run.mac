@@ -1,0 +1,8 @@
+# Source definition
+/control/execute sourceVolume.mac
+/control/execute neutronSpectrum_PuBe.mac
+
+# Commands:
+/vis/disable
+/run/beamOn 1000
+/vis/enable
