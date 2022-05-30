@@ -26,7 +26,6 @@
 
 Run::Run()
 {
-
 }
 
 //
@@ -42,10 +41,7 @@ void Run::Merge(const G4Run* aRun)
 {
   G4Run::Merge(aRun);
 
-  const Run* localRun = static_cast<const Run*>(aRun);
-  for (size_t i = 0; i != localRun->EDepPerEvent.size(); i++) {
-    EDepPerEvent.push_back(localRun->EDepPerEvent[i]);
-  }
+
 }
 
 //
