@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     UImanager->ApplyCommand(command+fileName);
   } else {
     // Interactive Mode:
-    UImanager->ApplyCommand("/control/macroPath /reactorBay_sourceFiles");
+    UImanager->ApplyCommand("/control/macroPath ../macros");
     UImanager->ApplyCommand("/control/execute init.mac");
     ui->SessionStart();
     delete ui;
