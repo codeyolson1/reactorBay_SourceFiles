@@ -31,25 +31,9 @@ class Run : public G4Run
 
     virtual void RecordEvent(const G4Event* );
     virtual void Merge(const G4Run* );
-    void ConstructDetector(const G4String& );
-
-    G4THitsMap<G4double>* GetHitsMap(const G4String&) const;
-    G4THitsMap<G4ThreeVector>* GetVectorMaps(const G4String&) const;
-    G4StatContainer<G4StatAnalysis>* GetStatMap(const G4String&) const;
-    std::vector<std::vector<G4double>> GetUnitVals() const {return funitVals;}
-    std::vector<std::vector<G4String>> GetUnitStrings() const {return funitStrings;}
-    std::vector<std::vector<G4String>> GetCollNames() const {return fcollNames;}
-    std::vector<G4String> GetDetNames() const {return fdetNames;}
 
   private:
-    std::vector<std::vector<G4String>> fcollNames;
-    std::vector<std::vector<G4int>> fcollIDs;
-    std::vector<std::vector<G4THitsMap<G4double>*>> frunMaps;
-    std::vector<std::vector<G4StatContainer<G4StatAnalysis>*>> fstatMaps;
-    std::vector<std::vector<G4double>> funitVals;
-    std::vector<std::vector<G4String>> funitStrings;
-    std::vector<G4String> fdetNames;
-    G4AnalysisManager* fanalysisManager;
+
 };
 
 #endif
