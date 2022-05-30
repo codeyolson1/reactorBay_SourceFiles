@@ -26,7 +26,7 @@
 
 Run::Run()
 {
-  EDepPerEvent = {};
+
 }
 
 //
