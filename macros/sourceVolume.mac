@@ -5,9 +5,11 @@
 /gps/pos/shape Cylinder
 
 # Storage Location in World Coords:
+#In Drum
 /gps/pos/centre -48.26 -22.86 -155.2575 cm
 
-#/gps/pos/centre 0 0 0 cm
+# -1 ft x from drum, on concrete floor, lowered.
+/gps/pos/centre -127.635 -22.86 -176.53 cm
 
 # PuBe Volume
 /gps/pos/halfz 1.905 cm
