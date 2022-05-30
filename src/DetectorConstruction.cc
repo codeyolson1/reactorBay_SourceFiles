@@ -35,6 +35,7 @@
 #include "G4PSIncidentAngle.hh"
 #include "G4PSIncidentEnergy.hh"
 #include "G4PSIncidentPosition.hh"
+#include "G4PSEnergyDeposit.hh"
 
 #include "G4SystemOfUnits.hh"
 #include "G4VisAttributes.hh"
@@ -80,14 +81,24 @@ void DetectorConstruction::ConstructMaterials()
   G4Material* oxygen = nist->FindOrBuildMaterial("G4_O");
   G4Material* sulfur = nist->FindOrBuildMaterial("G4_S");
   G4Material* calcium = nist->FindOrBuildMaterial("G4_Ca");
-  plaster->AddMaterial(hydrogen, 0.023416*perCent);
-  plaster->AddMaterial(oxygen, 0.557572*perCent);
-  plaster->AddMaterial(sulfur, 0.186215*perCent);
-  plaster->AddMaterial(calcium, 0.232797*perCent);
+  plaster->AddMaterial(hydrogen, 2.3416*perCent);
+  plaster->AddMaterial(oxygen, 55.7572*perCent);
+  plaster->AddMaterial(sulfur, 18.6215*perCent);
+  plaster->AddMaterial(calcium, 23.2797*perCent);
   fmats["plaster"] = plaster;
 
   G4Material* steel = nist->FindOrBuildMaterial("G4_STAINLESS-STEEL");
   fmats["steel"] = steel;
+
+  G4Material* aluminum = nist->FindOrBuildMaterial("G4_Al");
+  fmats["aluminum"] = aluminum;
+
+    G4Material* he3 = new G4Material("Helium 3", 5.39e-4*g/cm3, 1, kStateGas, 293.*kelvin, 4.*atmosphere); // From Walker Dissertai
+  G4Element* helium = new G4Element("Helium", "He", 1);
+  G4Isotope* helium3 = new G4Isotope("Helium3", 2, 3, 3.01602932197*g/mole); // from IAEA
+  helium->AddIsotope(helium3, 100.*perCent);
+  he3->AddElement(helium, 1);
+  fmats["he3"] = he3;
 
   // Material characteristics from ShieldWerx.
   G4Material* poly = nist->FindOrBuildMaterial("G4_POLYETHYLENE");
@@ -279,11 +290,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double shieldTopD = 38.1*cm;
   G4double shieldBottomD = 33.02*cm;
   G4double shieldH = 45.72*cm;
-  G4ThreeVector shieldCenter = G4ThreeVector(-48.26*cm, -22.86*cm, -148.49*cm);
+  G4ThreeVector shieldCenterDrum = G4ThreeVector(-48.26*cm, -22.86*cm, -148.49*cm);
+  G4ThreeVector shieldCenterRoom = G4ThreeVector(drumCenter.x() - drumD*0.5 - shieldTopD*0.5 - 30.48*cm, -22.86*cm, platCenter.z() + platZ*0.5 + shieldH*0.5);
   // Construction:
   G4Cons* shieldSolid = new G4Cons("Shield", 0, shieldBottomD*0.5, 0, shieldTopD*0.5, shieldH*0.5, 0, 360.*deg);
   G4LogicalVolume* shieldLogic = new G4LogicalVolume(shieldSolid, fmats["BPoly5"], "Shield");
-  new G4PVPlacement(0, shieldCenter, shieldLogic, "Shield", logicWorld, false, 0, checkOverlaps);
+  new G4PVPlacement(0, shieldCenterRoom, shieldLogic, "Shield", logicWorld, false, 0, checkOverlaps);
 
   // 
   // Poly Pellets in Storage Drum
@@ -321,9 +333,36 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4LogicalVolume* PuBeLogic = new G4LogicalVolume(PuBeSolid, fmats["PuBe"], "PuBeSource");
   new G4PVPlacement(0, G4ThreeVector(), PuBeLogic, "PuBe Source", tantalumLogic, false, 0, checkOverlaps);
 
+  // He3 Detector:
+  G4double tubeDiam;
+  G4double tubeHeight;
+  G4double modx, mody, modz;
+
+  // Tube and moderator dimensions:
+  tubeDiam = 2.74*cm;
+  tubeHeight = 10*cm;
+  modx = 6.54*cm; mody = 4.54*cm; modz = tubeHeight;
+  G4ThreeVector detCenter = G4ThreeVector(shieldCenterRoom.x() - shieldBottomD*0.5 - modx*0.5 - 18.*2.54*cm,shieldCenterRoom.y(), platCenter.z() + platZ*0.5 + tubeHeight*0.5);
+  // Tube Construction
+  G4Tubs* ssShellSolid = new G4Tubs("SS Shell", 0, 0.5*tubeDiam, 0.5*tubeHeight, 0, 360.*deg);
+  G4LogicalVolume* ssShellLogic = new G4LogicalVolume(ssShellSolid, fmats["aluminum"], "SS Shell");
+  new G4PVPlacement(0, detCenter, ssShellLogic, "SS Shell", logicWorld, false, 0, checkOverlaps); 
+  // helium3 fill gas:
+  G4Tubs* he3GasSolid = new G4Tubs("He3 Gas", 0, 0.5*(tubeDiam - 2*mm), 0.5*(tubeHeight - 2*mm), 0, 360.*deg);
+  G4LogicalVolume* he3GasLogic = new G4LogicalVolume(he3GasSolid, fmats["he3"], "He3 Gas");
+  new G4PVPlacement(0, G4ThreeVector(), he3GasLogic, "He3 Tube", ssShellLogic, false, 0, checkOverlaps); 
+  //Moderator:
+  // Dummies for subtraction solid:
+  G4Box* moderatorDummy = new G4Box("He3 Moderator Dummy", 0.5*modx, 0.5*mody, 0.5*modz);
+  G4Tubs* moderatorVoidDummy = new G4Tubs("He3 Void Dummy", 0, 0.5*tubeDiam, 0.5*(tubeHeight + 1*cm), 0, 360.*deg);
+  // Final solid:
+  G4VSolid* he3ModeratorSolid = new G4SubtractionSolid("He3 Moderator", moderatorDummy, moderatorVoidDummy, 0, G4ThreeVector());
+  G4LogicalVolume* he3ModeratorLogic = new G4LogicalVolume(he3ModeratorSolid, fmats["poly"], "He3 Moderator");
+  new G4PVPlacement(0, detCenter, he3ModeratorLogic, "He3 Moderator", logicWorld, false, 0, checkOverlaps);
   //
   // Detectors:
   // Params:
+  /*
   G4double detectorD = 15.*cm;
   std::map<std::string, G4ThreeVector> storageDetectors;
   std::map<std::string, G4ThreeVector> operationDetectors;
@@ -340,11 +379,13 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4LogicalVolume* sphere_Logic = new G4LogicalVolume(sphere_Solid, fmats["air"], fdetNames[i]);
     new G4PVPlacement(0, storageDetectors[fdetNames[i]], sphere_Logic, fdetNames[i], logicWorld, false, 0, checkOverlaps);
    }
+   */
   return physWorld;
 }
 
 void DetectorConstruction::ConstructSDandField()
 {
+  /*
   auto nFilter = new G4SDParticleFilter("n-Filter", "neutron");
   auto gFilter = new G4SDParticleFilter("g-Filter", "gamma");
 
@@ -369,5 +410,20 @@ void DetectorConstruction::ConstructSDandField()
     gDetector->RegisterPrimitive(gDoseEff);
     SetSensitiveDetector(fdetNames[i], gDetector);
   }
+  */
+  G4SDParticleFilter* nFilter = new G4SDParticleFilter("NeutronFilter");
+  nFilter->add("proton");
+  nFilter->add("triton");
+  nFilter->add("He3");
+  nFilter->add("deuteron");
+  nFilter->add("GenericIon");
+
+  G4MultiFunctionalDetector* he3Detector = new G4MultiFunctionalDetector("Helium-3");
+  G4SDManager::GetSDMpointer()->AddNewDetector(he3Detector);
+  G4VPrimitiveScorer* energyDep = new G4PSEnergyDeposit("EnergyDep");
+  energyDep->SetFilter(nFilter);
+  he3Detector->RegisterPrimitive(energyDep);
+  SetSensitiveDetector("He3 Gas", he3Detector);
+
 
 }
