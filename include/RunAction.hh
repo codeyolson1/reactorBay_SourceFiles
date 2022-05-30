@@ -14,6 +14,8 @@
 #include "G4StatAnalysis.hh"
 #include "Analysis.hh"
 #include "G4SDManager.hh"
+#include "G4ConvergenceTester.hh"
+#include "RunActionMessenger.hh"
 #include <iostream>
 
 class G4Run;
@@ -28,14 +30,14 @@ class RunAction : public G4UserRunAction
     virtual ~RunAction();
 
     virtual G4Run* GenerateRun();
-    virtual void BeginOfRunAction(const G4Run* );
+    virtual void BeginOfRunAction(const G4Run*);
     virtual void EndOfRunAction(const G4Run* );
+    void SetFileName(G4String);
 
   private:
-    G4SDManager* fsdPointer;
-    G4AnalysisManager* fanalysisManager;
-    std::vector<G4double> nEdges;
-    G4String fName;
+    G4String outFileName;
+    RunActionMessenger* fMessenger;
+
 };
 
 #endif
