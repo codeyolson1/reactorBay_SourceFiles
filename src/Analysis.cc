@@ -21,12 +21,16 @@ namespace {
   G4ConvergenceTester* fConvTest = new G4ConvergenceTester("ConvTest");
 }
 
-Analysis::Analysis()
+Analysis::Analysis(G4bool he3)
 {
   eDepHist = 0;
+  eDepHist1 = 0;
+  eDepHist2 = 0;
+  eDepHistTot = 0;
   primEneHist = 0;
   primPosHist = 0;
   convergenceName = "";
+  isHe3 = he3;
 }
 
 //
@@ -39,10 +43,10 @@ Analysis::~Analysis()
 //
 //
 
-Analysis* Analysis::GetAnalysis()
+Analysis* Analysis::GetAnalysis(G4bool he3)
 {
   if (!theAnalysis) {
-    theAnalysis = new Analysis();
+    theAnalysis = new Analysis(he3);
     G4AutoDelete::Register(theAnalysis);
   }
   return theAnalysis;
@@ -62,7 +66,14 @@ void Analysis::Book(G4String runName)
   man->SetFirstNtupleId(0);
   man->SetFirstNtupleColumnId(0);
 
-  eDepHist = man->CreateH1("He3EnergyDep", "He3EnergyDep", 512, 0., 5.);
+  if (isHe3) {
+    eDepHist = man->CreateH1("He3EnergyDep", "He3EnergyDep", 512, 0., 5.);
+  } else {
+    eDepHist1 = man->CreateH1("BF3EnergyDep1", "BF3EnergyDep1", 512, 0., 5.);
+    eDepHist2 = man->CreateH1("BF3EnergyDep2", "BF3EnergyDep2", 512, 0., 5.);
+    eDepHistTot = man->CreateH1("BF3EnergyDepTot", "BF3EnergyDepTot", 512, 0., 5.);
+  }
+
   primEneHist = man->CreateH1("PrimaryEnergy", "PrimaryEnergy", 50, 0., 20.);
   primPosHist = man->CreateH2("PrimaryPosition", "PrimaryPosition", 110, -5.5, 5.5, 90, -4.5, 4.5);
 
@@ -105,11 +116,19 @@ void Analysis::Close(G4bool reset)
 //
 //
 
-void Analysis::FillEDep(G4double eDep)
+void Analysis::FillEDep(G4double eDep, G4int hist)
 {
   //G4cout << "Adding Energy Deposittion. " << G4endl;+
   G4AnalysisManager* man = G4AnalysisManager::Instance();
+  if (hist == 0) {
   man->FillH1(eDepHist, eDep);
+  } else if (hist == 1) {
+    man->FillH1(eDepHist1, eDep);
+  } else if (hist == 2) {
+    man->FillH1(eDepHist2, eDep);
+  } else if (hist == 3) {
+    man->FillH1(eDepHistTot, eDep);
+  }
   G4AutoLock l(&aMutex);
   fConvTest->AddScore(eDep);
   return;
