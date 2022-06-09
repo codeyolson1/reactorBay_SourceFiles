@@ -9,9 +9,11 @@
 #include "RunAction.hh"
 #include "EventAction.hh"
 
-ActionInitialization::ActionInitialization()
+ActionInitialization::ActionInitialization(G4bool he3)
 : G4VUserActionInitialization()
-{}
+{
+  isHe3 = he3;
+}
 
 //
 //
@@ -24,7 +26,7 @@ ActionInitialization::~ActionInitialization()
 
 void ActionInitialization::BuildForMaster() const
 {
-  SetUserAction(new RunAction);
+  SetUserAction(new RunAction(isHe3));
 }
 
 //
@@ -32,7 +34,7 @@ void ActionInitialization::BuildForMaster() const
 
 void ActionInitialization::Build() const
 {
-  SetUserAction(new RunAction);
+  SetUserAction(new RunAction(isHe3));
   SetUserAction(new PrimaryGeneratorAction);
   SetUserAction(new EventAction);
 }
