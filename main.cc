@@ -26,7 +26,7 @@ int main(int argc, char** argv)
   G4Random::setTheEngine(new CLHEP::MixMaxRng);
   G4MTRunManager* runManager = new G4MTRunManager;
 
-  G4bool isHe3 = true;
+  G4bool isHe3 = false;
   runManager->SetUserInitialization(new DetectorConstruction(isHe3));
 
   G4VModularPhysicsList* physicsList = new PhysicsList();
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
   G4ParticleHPManager::GetInstance()->SetProduceFissionFragments( false );
   //G4ParticleHPManager::GetInstance()->SetUseWendtFissionModel( false );
   G4ParticleHPManager::GetInstance()->SetUseNRESP71Model( false );
-  runManager->SetUserInitialization(new ActionInitialization());
+  runManager->SetUserInitialization(new ActionInitialization(isHe3));
 
   G4VisManager* visManager = new G4VisExecutive;
   visManager->Initialize();
