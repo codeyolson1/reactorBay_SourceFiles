@@ -28,7 +28,7 @@ class Analysis {
     void Save();
     void Close(G4bool reset = true);
 
-    void FillEDep(G4double eDep);
+    void FillEDep(G4double eDep, G4int);
     void FillPrimaryEne(G4double);
     void FillPrimaryPos(G4double, G4double);
     void CheckConvergence();
@@ -38,6 +38,9 @@ class Analysis {
     DISALLOW_COPY_AND_ASSIGN(Analysis);
 
     G4int eDepHist;
+    G4int eDepHist1;
+    G4int eDepHist2;
+    G4int eDepHistTot;
     G4int primEneHist;
     G4int primPosHist;
     G4String convergenceName;
