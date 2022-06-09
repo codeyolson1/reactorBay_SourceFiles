@@ -45,12 +45,13 @@
 #include <iostream>
 #include <string>
 
-DetectorConstruction::DetectorConstruction()
+DetectorConstruction::DetectorConstruction(G4bool he3)
 : G4VUserDetectorConstruction(), fdetNames(0.), fnumDets(0)
 {
   fdetNames = {"ceiling", "office", "lab", "mesanine", "bayFloor", "surface", "30cm"};
   fnumDets = fdetNames.size(); 
   fmats = {};
+  isHe3 = he3;
 
   ConstructMaterials();
 }
@@ -133,6 +134,17 @@ void DetectorConstruction::ConstructMaterials()
   PuBe->AddMaterial(Berillyum, 33.60332295*perCent);
   fmats["PuBe"] = PuBe;
   fmats["Tantalum"] = Tantalum;
+
+  G4Element* fluorine = nist->FindOrBuildElement(9, true);
+  G4Material* bf3En = new G4Material("Boron Trifluoride (Enriched)", 2.73e-3*g/cm3, 2, kStateGas, 293.*kelvin, 1.*atmosphere); // From Walker Dissertai
+  G4Element* enrBoron = new G4Element("Enriched Boron", "B", 2);
+  G4Isotope* boron10 = new G4Isotope("Boron10", 5, 10, 10.012936862*g/mole); // 
+  G4Isotope* boron11 = new G4Isotope("Boron11", 5, 11, 11.009305167*g/mole); //
+  enrBoron->AddIsotope(boron10, 96.*perCent);
+  enrBoron->AddIsotope(boron11, 4.*perCent);
+  bf3En->AddElement(enrBoron, 1);
+  bf3En->AddElement(fluorine, 3);
+  fmats["enrBF3"] = bf3En;
   
 }
 
@@ -333,97 +345,104 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4LogicalVolume* PuBeLogic = new G4LogicalVolume(PuBeSolid, fmats["PuBe"], "PuBeSource");
   new G4PVPlacement(0, G4ThreeVector(), PuBeLogic, "PuBe Source", tantalumLogic, false, 0, checkOverlaps);
 
-  // He3 Detector:
-  G4double tubeDiam;
-  G4double tubeHeight;
-  G4double modx, mody, modz;
-
-  // Tube and moderator dimensions:
-  tubeDiam = 2.74*cm;
-  tubeHeight = 10*cm;
-  modx = 6.54*cm; mody = 4.54*cm; modz = tubeHeight;
-  G4ThreeVector detCenter = G4ThreeVector(shieldCenterRoom.x() - shieldBottomD*0.5 - modx*0.5 - 18.*2.54*cm,shieldCenterRoom.y(), platCenter.z() + platZ*0.5 + tubeHeight*0.5);
-  // Tube Construction
-  G4Tubs* ssShellSolid = new G4Tubs("SS Shell", 0, 0.5*tubeDiam, 0.5*tubeHeight, 0, 360.*deg);
-  G4LogicalVolume* ssShellLogic = new G4LogicalVolume(ssShellSolid, fmats["aluminum"], "SS Shell");
-  new G4PVPlacement(0, detCenter, ssShellLogic, "SS Shell", logicWorld, false, 0, checkOverlaps); 
-  // helium3 fill gas:
-  G4Tubs* he3GasSolid = new G4Tubs("He3 Gas", 0, 0.5*(tubeDiam - 2*mm), 0.5*(tubeHeight - 2*mm), 0, 360.*deg);
-  G4LogicalVolume* he3GasLogic = new G4LogicalVolume(he3GasSolid, fmats["he3"], "He3 Gas");
-  new G4PVPlacement(0, G4ThreeVector(), he3GasLogic, "He3 Tube", ssShellLogic, false, 0, checkOverlaps); 
-  //Moderator:
-  // Dummies for subtraction solid:
-  G4Box* moderatorDummy = new G4Box("He3 Moderator Dummy", 0.5*modx, 0.5*mody, 0.5*modz);
-  G4Tubs* moderatorVoidDummy = new G4Tubs("He3 Void Dummy", 0, 0.5*tubeDiam, 0.5*(tubeHeight + 1*cm), 0, 360.*deg);
-  // Final solid:
-  G4VSolid* he3ModeratorSolid = new G4SubtractionSolid("He3 Moderator", moderatorDummy, moderatorVoidDummy, 0, G4ThreeVector());
-  G4LogicalVolume* he3ModeratorLogic = new G4LogicalVolume(he3ModeratorSolid, fmats["poly"], "He3 Moderator");
-  new G4PVPlacement(0, detCenter, he3ModeratorLogic, "He3 Moderator", logicWorld, false, 0, checkOverlaps);
-  //
-  // Detectors:
-  // Params:
-  /*
-  G4double detectorD = 15.*cm;
-  std::map<std::string, G4ThreeVector> storageDetectors;
-  std::map<std::string, G4ThreeVector> operationDetectors;
-  storageDetectors[fdetNames[0]] = G4ThreeVector(-48.26*cm, -22.86*cm, 288.41*cm); // Ceiling
-  storageDetectors[fdetNames[1]] = G4ThreeVector(-48.26*cm, -166.37*cm, 44.45*cm); // Office
-  storageDetectors[fdetNames[2]] = G4ThreeVector(190.5*cm, -22.86*cm, 44.45*cm); // Lab
-  storageDetectors[fdetNames[3]] = G4ThreeVector(27.94*cm, 105.41*cm, 44.45*cm); // Mesanine
-  storageDetectors[fdetNames[4]] = G4ThreeVector(-167.64*cm, 151.13*cm, -153.67*cm);
-  storageDetectors[fdetNames[5]] = G4ThreeVector(-85.605*cm, -22.86*cm, -155.2575*cm); // Surface
-  storageDetectors[fdetNames[6]] = G4ThreeVector(-115.605*cm, -22.86*cm, -155.2575*cm); //  30 cm
-  // Construction:
-   for (G4int i = 0; i < fnumDets; i++) {
-    G4Sphere* sphere_Solid = new G4Sphere(fdetNames[i], 0, 0.5*detectorD, 0, 360.*deg, 0, 180.*deg);
-    G4LogicalVolume* sphere_Logic = new G4LogicalVolume(sphere_Solid, fmats["air"], fdetNames[i]);
-    new G4PVPlacement(0, storageDetectors[fdetNames[i]], sphere_Logic, fdetNames[i], logicWorld, false, 0, checkOverlaps);
-   }
-   */
+  if (isHe3) {
+    //
+    // He3 Detector:
+    // Params:
+    G4double tubeDiam;
+    G4double tubeHeight;
+    G4double modx, mody, modz;
+    // Tube and moderator dimensions:
+    tubeDiam = 2.74*cm;
+    tubeHeight = 10*cm;
+    modx = 6.54*cm; mody = 4.54*cm; modz = tubeHeight;
+    G4ThreeVector detCenter = G4ThreeVector(shieldCenterRoom.x() - shieldBottomD*0.5 - modx*0.5 - 18.*2.54*cm,shieldCenterRoom.y(), platCenter.z() + platZ*0.5 + tubeHeight*0.5);
+    // Tube Construction
+    G4Tubs* ssShellSolid = new G4Tubs("SS Shell", 0, 0.5*tubeDiam, 0.5*tubeHeight, 0, 360.*deg);
+    G4LogicalVolume* ssShellLogic = new G4LogicalVolume(ssShellSolid, fmats["aluminum"], "SS Shell");
+    new G4PVPlacement(0, detCenter, ssShellLogic, "SS Shell", logicWorld, false, 0, checkOverlaps); 
+    // helium3 fill gas:
+    G4Tubs* he3GasSolid = new G4Tubs("He3 Gas", 0, 0.5*(tubeDiam - 2*mm), 0.5*(tubeHeight - 2*mm), 0, 360.*deg);
+    G4LogicalVolume* he3GasLogic = new G4LogicalVolume(he3GasSolid, fmats["he3"], "He3 Gas");
+    new G4PVPlacement(0, G4ThreeVector(), he3GasLogic, "He3 Tube", ssShellLogic, false, 0, checkOverlaps); 
+    //Moderator:
+    // Dummies for subtraction solid:
+    G4Box* moderatorDummy = new G4Box("He3 Moderator Dummy", 0.5*modx, 0.5*mody, 0.5*modz);
+    G4Tubs* moderatorVoidDummy = new G4Tubs("He3 Void Dummy", 0, 0.5*tubeDiam, 0.5*(tubeHeight + 1*cm), 0, 360.*deg);
+    // Final solid:
+    G4VSolid* he3ModeratorSolid = new G4SubtractionSolid("He3 Moderator", moderatorDummy, moderatorVoidDummy, 0, G4ThreeVector());
+    G4LogicalVolume* he3ModeratorLogic = new G4LogicalVolume(he3ModeratorSolid, fmats["poly"], "He3 Moderator");
+    new G4PVPlacement(0, detCenter, he3ModeratorLogic, "He3 Moderator", logicWorld, false, 0, checkOverlaps);
+  } else {
+    G4double tubeDiam;
+    G4double tubeHeight;
+    G4double modx, mody, modz;
+    // Tube and moderator dimensions:
+    tubeDiam = 4.6*cm;
+    tubeHeight = 10*cm;
+    modx = tubeDiam*2. + 4.5*cm; mody = tubeDiam + 2.*cm; modz = tubeHeight;
+    // Construct BF3 Detectors:
+    G4ThreeVector detCenter = G4ThreeVector(shieldCenterRoom.x() - shieldBottomD*0.5 - modx*0.5 - 24.25*2.54*cm,shieldCenterRoom.y(), platCenter.z() + platZ*0.5 + tubeHeight*0.5);
+    // SS Shells
+    G4Tubs* bf3ShellSolid1 = new G4Tubs("BF3 Shell1", 0, 0.5*tubeDiam, 0.5*tubeHeight, 0, 360.*deg);
+    G4LogicalVolume* bf3ShellLogic1 = new G4LogicalVolume(bf3ShellSolid1, fmats["aluminum"], "BF3 Shell1");
+    new G4PVPlacement(0, G4ThreeVector(detCenter.x() + tubeDiam*0.5 + 0.5*cm, detCenter.y(), detCenter.z()), bf3ShellLogic1, "BF3 Shell1", logicWorld, false, 0, checkOverlaps);
+    G4Tubs* bf3ShellSolid2 = new G4Tubs("BF3 Shell2", 0, 0.5*tubeDiam, 0.5*tubeHeight, 0, 360.*deg);
+    G4LogicalVolume* bf3ShellLogic2 = new G4LogicalVolume(bf3ShellSolid2, fmats["aluminum"], "BF3 Shell2");
+    new G4PVPlacement(0, G4ThreeVector(detCenter.x() - tubeDiam*0.5 - 0.5*cm, detCenter.y(), detCenter.z()), bf3ShellLogic2, "BF3 Shell2", logicWorld, false, 0, checkOverlaps);
+    // BF3 fill gas:
+    G4Tubs* bf3GasSolid1 = new G4Tubs("BF3 Gas1", 0, 0.5*(tubeDiam - 2.*mm), 0.5*(tubeHeight - 2.*mm), 0, 360.*deg);
+    G4LogicalVolume* bf3GasLogic1 = new G4LogicalVolume(bf3GasSolid1, fmats["enrBF3"], "BF3 Gas1");
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), bf3GasLogic1, "BF3 Gas1", bf3ShellLogic1, false, 0, checkOverlaps);
+    G4Tubs* bf3GasSolid2 = new G4Tubs("BF3 Gas2", 0, 0.5*(tubeDiam - 2.*mm), 0.5*(tubeHeight - 2.*mm), 0, 360.*deg);
+    G4LogicalVolume* bf3GasLogic2 = new G4LogicalVolume(bf3GasSolid2, fmats["enrBF3"], "BF3 Gas2");
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 0), bf3GasLogic2, "BF3 Gas2", bf3ShellLogic2, false, 0, checkOverlaps);
+    // Moderator:
+    G4Box* moderatorDummy1 = new G4Box("BF3 Moderator Dummy", 0.5*modx, 0.5*mody, 0.5*modz);
+    G4Tubs* moderatorVoidDummy1 = new G4Tubs("BF3 Moderator Void Dummy", 0, 0.5*tubeDiam, 0.5*(tubeHeight + 1.*cm), 0, 360.*deg);
+    G4VSolid* bf3ModeratorTemp = new G4SubtractionSolid("Mod Temp", moderatorDummy1, moderatorVoidDummy1, 0, G4ThreeVector(tubeDiam*0.5 + 0.5*cm, 0, 0));
+    G4VSolid* bf3ModeratorSolid = new G4SubtractionSolid("BF3 Moderator", bf3ModeratorTemp, moderatorVoidDummy1, 0, G4ThreeVector(-tubeDiam*0.5 - 0.5*cm, 0, 0));
+    G4LogicalVolume* moderatorBF3Logic = new G4LogicalVolume(bf3ModeratorSolid, fmats["poly"], "ModeratorBF3");
+    new G4PVPlacement(0, detCenter, moderatorBF3Logic, "ModeratorBF3", logicWorld, false, 0, checkOverlaps);
+  }
   return physWorld;
 }
 
 void DetectorConstruction::ConstructSDandField()
 {
-  /*
-  auto nFilter = new G4SDParticleFilter("n-Filter", "neutron");
-  auto gFilter = new G4SDParticleFilter("g-Filter", "gamma");
+  if (isHe3) {
+    G4SDParticleFilter* nFilter = new G4SDParticleFilter("NeutronFilter");
+    nFilter->add("proton");
+    nFilter->add("triton");
+    nFilter->add("He3");
+    nFilter->add("deuteron");
+    nFilter->add("GenericIon");
 
-  for (G4int i = 0; i < fnumDets; i++) {
-    G4MultiFunctionalDetector* nDetector = new G4MultiFunctionalDetector(fdetNames[i]+"N");
-    G4SDManager::GetSDMpointer()->AddNewDetector(nDetector);
-    G4VPrimitiveScorer* nDoseEq = new G4PSCellFluxToDose("nEquivalentDose");
-    nDoseEq->SetFilter(nFilter);
-    nDetector->RegisterPrimitive(nDoseEq);
-    G4VPrimitiveScorer* nDoseEff = new G4PSCellFluxToEffDose("nEffectiveDose");
-    nDoseEff->SetFilter(nFilter);
-    nDetector->RegisterPrimitive(nDoseEff);
-    SetSensitiveDetector(fdetNames[i], nDetector);
-    
-    G4MultiFunctionalDetector* gDetector = new G4MultiFunctionalDetector(fdetNames[i]+"G");
-    G4SDManager::GetSDMpointer()->AddNewDetector(gDetector);
-    G4VPrimitiveScorer* gDoseEq = new G4PSCellFluxToDose("gEquivalentDose");
-    gDoseEq->SetFilter(gFilter);
-    gDetector->RegisterPrimitive(gDoseEq);
-    G4VPrimitiveScorer* gDoseEff = new G4PSCellFluxToEffDose("gEffectiveDose");
-    gDoseEff->SetFilter(gFilter);
-    gDetector->RegisterPrimitive(gDoseEff);
-    SetSensitiveDetector(fdetNames[i], gDetector);
+    G4MultiFunctionalDetector* he3Detector = new G4MultiFunctionalDetector("Helium-3");
+    G4SDManager::GetSDMpointer()->AddNewDetector(he3Detector);
+    G4VPrimitiveScorer* energyDep = new G4PSEnergyDeposit("EnergyDep");
+    energyDep->SetFilter(nFilter);
+    he3Detector->RegisterPrimitive(energyDep);
+    SetSensitiveDetector("He3 Gas", he3Detector);
+  } else {
+    G4SDParticleFilter* nFilter = new G4SDParticleFilter("NeutronFilter");
+    nFilter->add("alpha");
+    nFilter->add("GenericIon");
+    nFilter->add("neutron");
+
+    G4MultiFunctionalDetector* bf3Detector1 = new G4MultiFunctionalDetector("BF31");
+    G4SDManager::GetSDMpointer()->AddNewDetector(bf3Detector1);
+    G4VPrimitiveScorer* energyDep1 = new G4PSEnergyDeposit("EnergyDep1");
+    bf3Detector1->RegisterPrimitive(energyDep1);
+    energyDep1->SetFilter(nFilter);
+    SetSensitiveDetector("BF3 Gas1", bf3Detector1);
+
+    G4MultiFunctionalDetector* bf3Detector2 = new G4MultiFunctionalDetector("BF32");
+    G4SDManager::GetSDMpointer()->AddNewDetector(bf3Detector2);
+    G4VPrimitiveScorer* energyDep2 = new G4PSEnergyDeposit("EnergyDep2");
+    bf3Detector2->RegisterPrimitive(energyDep2);
+    energyDep2->SetFilter(nFilter);
+    SetSensitiveDetector("BF3 Gas2", bf3Detector2);
   }
-  */
-  G4SDParticleFilter* nFilter = new G4SDParticleFilter("NeutronFilter");
-  nFilter->add("proton");
-  nFilter->add("triton");
-  nFilter->add("He3");
-  nFilter->add("deuteron");
-  nFilter->add("GenericIon");
-
-  G4MultiFunctionalDetector* he3Detector = new G4MultiFunctionalDetector("Helium-3");
-  G4SDManager::GetSDMpointer()->AddNewDetector(he3Detector);
-  G4VPrimitiveScorer* energyDep = new G4PSEnergyDeposit("EnergyDep");
-  energyDep->SetFilter(nFilter);
-  he3Detector->RegisterPrimitive(energyDep);
-  SetSensitiveDetector("He3 Gas", he3Detector);
-
 
 }
