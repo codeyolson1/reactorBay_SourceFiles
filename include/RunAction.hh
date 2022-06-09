@@ -26,7 +26,7 @@ class G4Run;
 class RunAction : public G4UserRunAction
 {
   public:
-    RunAction();
+    RunAction(G4bool);
     virtual ~RunAction();
 
     virtual G4Run* GenerateRun();
@@ -37,7 +37,7 @@ class RunAction : public G4UserRunAction
   private:
     G4String outFileName;
     RunActionMessenger* fMessenger;
-
+    G4bool isHe3;
 };
 
 #endif

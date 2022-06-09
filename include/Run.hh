@@ -26,14 +26,14 @@ template <typename _Tp> using G4StatContainer = G4THitsDeque<_Tp>;
 class Run : public G4Run
 {
   public:
-    Run();
+    Run(G4bool);
     virtual ~Run();
 
     virtual void RecordEvent(const G4Event* );
     virtual void Merge(const G4Run* );
 
   private:
-
+    G4bool isHe3;
 };
 
 #endif
