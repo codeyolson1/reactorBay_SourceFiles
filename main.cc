@@ -26,7 +26,8 @@ int main(int argc, char** argv)
   G4Random::setTheEngine(new CLHEP::MixMaxRng);
   G4MTRunManager* runManager = new G4MTRunManager;
 
-  runManager->SetUserInitialization(new DetectorConstruction());
+  G4bool isHe3 = true;
+  runManager->SetUserInitialization(new DetectorConstruction(isHe3));
 
   G4VModularPhysicsList* physicsList = new PhysicsList();
   //G4VModularPhysicsList* physicsList = new QGSP_BIC_HP();
