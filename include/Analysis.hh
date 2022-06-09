@@ -17,9 +17,10 @@
 
 class Analysis {
   public:
+    Analysis(G4bool);
     ~Analysis();
 
-    static Analysis* GetAnalysis();
+    static Analysis* GetAnalysis(G4bool);
 
     void Book(G4String);
     void EndOfRun();
@@ -44,6 +45,7 @@ class Analysis {
     G4int primEneHist;
     G4int primPosHist;
     G4String convergenceName;
+    G4bool isHe3;
 };
 
 #endif
