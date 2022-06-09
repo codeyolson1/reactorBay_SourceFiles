@@ -24,8 +24,9 @@
 
 #include <atomic>
 
-Run::Run()
+Run::Run(G4bool he3)
 {
+  isHe3 = he3;
 }
 
 //
@@ -54,7 +55,7 @@ void Run::RecordEvent(const G4Event* anEvent)
     std::cout << "Event " << eventNum << " started." << std::endl;
   }
 
-  Analysis* myAnalysis = Analysis::GetAnalysis();
+  Analysis* myAnalysis = Analysis::GetAnalysis(isHe3);
   G4SDManager* sdMan = G4SDManager::GetSDMpointer();
   // Get Primary Energy information:
   G4PrimaryVertex* pVertex = anEvent->GetPrimaryVertex();
