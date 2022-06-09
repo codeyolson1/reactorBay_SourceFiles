@@ -19,7 +19,7 @@ class G4LogicalVolume;
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
   public:
-    DetectorConstruction();
+    DetectorConstruction(G4bool);
     virtual ~DetectorConstruction();
 
     virtual G4VPhysicalVolume* Construct();
@@ -29,6 +29,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     std::vector<G4String> fdetNames;
     G4int fnumDets;
     std::map<std::string, G4Material*> fmats;
+    G4bool isHe3;
 
   public:
     inline std::vector<G4String> GetDetNames() const { return fdetNames; }
