@@ -25,6 +25,7 @@
 
 #include "G4EmStandardPhysics.hh"
 #include "G4EmLivermorePhysics.hh"
+#include "G4EmExtraPhysics.hh"
 
 #include "G4IonElasticPhysics.hh"
 #include "G4IonPhysicsXS.hh"
@@ -66,7 +67,7 @@ PhysicsList::PhysicsList()
   // Hadron Inelastic physics
   //
   ////RegisterPhysics( new G4HadronPhysicsFTFP_BERT_HP(verb));
-  //RegisterPhysics( new G4HadronPhysicsQGSP_BIC_HP(verb));
+  RegisterPhysics( new G4HadronPhysicsQGSP_BIC_HP(verb));
   //RegisterPhysics( new G4HadronPhysicsQGSP_BIC_AllHP(verb));
   ////RegisterPhysics( new G4HadronPhysicsQGSP_BIC(verb));  
   ////RegisterPhysics( new G4HadronInelasticQBBC(verb));
@@ -75,14 +76,14 @@ PhysicsList::PhysicsList()
     
   // Electromagnetic physics:
   RegisterPhysics( new G4EmLivermorePhysics(verb));
-  
+  RegisterPhysics( new G4EmExtraPhysics(verb));
   // Ion Elastic scattering
   //
   RegisterPhysics( new G4IonElasticPhysics(verb));
   
   // Ion Inelastic physics
   //
-  RegisterPhysics( new G4IonPhysicsXS(verb));
+  RegisterPhysics( new G4IonPhysics(verb));
   ////RegisterPhysics( new G4IonPhysicsPHP(verb));
   ////RegisterPhysics( new G4IonQMDPhysics(verb));
   ////RegisterPhysics( new G4IonINCLXXPhysics(verb));
