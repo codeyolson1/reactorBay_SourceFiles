@@ -26,7 +26,7 @@ int main(int argc, char** argv)
   G4Random::setTheEngine(new CLHEP::MixMaxRng);
   G4MTRunManager* runManager = new G4MTRunManager;
 
-  G4bool isHe3 = false;
+  G4bool isHe3 = true;
   runManager->SetUserInitialization(new DetectorConstruction(isHe3));
 
   G4VModularPhysicsList* physicsList = new PhysicsList();
